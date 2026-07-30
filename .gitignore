@@ -1,0 +1,8 @@
+# Holds your app password -- never commit this.
+config.json
+
+logs/
+out/
+
+__pycache__/
+*.pyc

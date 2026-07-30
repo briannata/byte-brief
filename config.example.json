@@ -1,0 +1,9 @@
+{
+  "smtp_host": "smtp.gmail.com",
+  "smtp_port": 465,
+  "sender": "you@gmail.com",
+  "app_password": "PASTE_16_CHAR_GOOGLE_APP_PASSWORD_HERE",
+  "recipients": ["you@gmail.com"],
+  "story_count": 10,
+  "subject_prefix": "Byte Brief"
+}

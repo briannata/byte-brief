@@ -1,0 +1,62 @@
+name: Daily Byte Brief
+
+on:
+  schedule:
+    # 12:00 UTC = 8:00 AM Eastern Daylight Time (7:00 AM once EST returns in Nov).
+    # GitHub cron has no timezone support, so this shifts an hour at DST changes.
+    - cron: "0 12 * * *"
+  # Lets you run it on demand from the Actions tab.
+  workflow_dispatch:
+
+# The job only reads the repo; deny everything else.
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-brief
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check that secrets are configured
+        env:
+          SENDER: ${{ secrets.BYTE_BRIEF_SENDER }}
+          RECIPIENTS: ${{ secrets.BYTE_BRIEF_RECIPIENTS }}
+          APP_PASSWORD: ${{ secrets.BYTE_BRIEF_APP_PASSWORD }}
+        run: |
+          missing=""
+          [ -z "$SENDER" ] && missing="$missing BYTE_BRIEF_SENDER"
+          [ -z "$RECIPIENTS" ] && missing="$missing BYTE_BRIEF_RECIPIENTS"
+          [ -z "$APP_PASSWORD" ] && missing="$missing BYTE_BRIEF_APP_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "Missing repository secrets:$missing"
+            echo "Add them under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          echo "All required secrets are present."
+
+      - name: Send the brief
+        env:
+          BYTE_BRIEF_SENDER: ${{ secrets.BYTE_BRIEF_SENDER }}
+          BYTE_BRIEF_RECIPIENTS: ${{ secrets.BYTE_BRIEF_RECIPIENTS }}
+          BYTE_BRIEF_APP_PASSWORD: ${{ secrets.BYTE_BRIEF_APP_PASSWORD }}
+        run: python hn_brief.py
+
+      - name: Upload log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: byte-brief-log
+          path: logs/
+          if-no-files-found: ignore
+          retention-days: 7
